@@ -1,0 +1,87 @@
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+!
+multilink bundle-name authenticated
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+!
+multilink bundle-name authenticated
+!
+!interface Ethernet1/0
+ description AS1-R3
+ ip address 10.1.0.10 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/1
+ description AS1-R5
+ ip address 10.1.0.17 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+ !
+ !interface Ethernet1/2
+ description Ligacao_VPC_da_rede_10.1.1.0
+ ip address 10.1.1.254 255.255.255.0
+ duplex full
+!
+interface Ethernet1/3
+ description Ligacao_ao_VPC_da_rede_ 10.1.2.0
+ ip address 10.1.2.254 255.255.255.0
+ duplex full
+ !
+ !interface Ethernet1/2
+ description Ligacao_VPC_da_rede_10.1.1.0
+ ip address 10.1.1.254 255.255.255.0
+ duplex full
+!
+interface Ethernet1/3
+ description Ligacao_ao_VPC_da_rede_ 10.1.2.0
+ ip address 10.1.2.254 255.255.255.0
+ duplex full
+ !
+ ! !
+ template peer-session TEMPLATE-SESSION-AS1
+  remote-as 1
+  update-source Loopback0
+ exit-peer-session
+ !        
+ bgp log-neighbor-changes
+ network 10.1.1.0 mask 255.255.255.0
+ network 10.1.2.0 mask 255.255.255.0
+ neighbor 10.1.255.3 inherit peer-session TEMPLATE-SESSION-AS1
+ neighbor 10.1.255.3 description AS1-R3
+ neighbor 10.1.255.3 inherit peer-policy TEMPLATE-POLICY-AS1
+ maximum-paths ibgp 16
+ !
+ !!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+!
+route-map RM-AS3-R1-OUT permit 20
+ match ip address prefix-list PL-AS5-CIDR-AGREGADA
+ match as-path 4
+ set origin incomplete
+!
+!
+!
+control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!
+!
+end

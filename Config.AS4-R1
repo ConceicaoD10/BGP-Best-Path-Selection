@@ -1,0 +1,115 @@
+hostname AS4-R1
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!         
+!
+multilink bundle-name authenticated
+!
+!
+interface Loopback0
+ ip address 10.4.255.1 255.255.255.255
+ !interface Loopback10
+ ip address 172.16.0.1 255.255.255.0
+!
+interface Loopback20
+ ip address 172.16.3.1 255.255.255.0
+!
+interface Loopback172161
+ ip address 172.16.1.1 255.255.255.255
+!
+interface Loopback172162
+ ip address 172.16.2.1 255.255.255.255
+!
+!interface Ethernet1/0
+ description AS3-R1
+ ip address 10.34.0.2 255.255.255.252
+ duplex full
+!
+interface Ethernet1/1
+ description AS5-R1
+ ip address 10.45.0.1 255.255.255.252
+ duplex full
+!
+!
+router bgp 4
+ bgp always-compare-med
+ bgp log-neighbor-changes
+ redistribute connected route-map RM-CONNECTED2BGP
+ neighbor 10.34.0.1 remote-as 3
+ neighbor 10.34.0.1 description AS3-R1
+ neighbor 10.34.0.1 send-community both
+ neighbor 10.34.0.1 route-map RM-AS3-R1-OUT out
+ neighbor 10.45.0.2 remote-as 5
+ neighbor 10.45.0.2 description AS5-R1
+ neighbor 10.45.0.2 send-community both
+ neighbor 10.45.0.2 route-map RM-AS5-R1-OUT out
+ !ip forward-protocol nd
+!
+ip as-path access-list 3 permit _3$
+ip as-path access-list 4 permit ^$
+!
+no ip http server
+no ip http secure-server
+!
+!ip prefix-list PL-AS5-CIDR seq 5 permit 172.16.0.0/22 le 24
+!
+ip prefix-list PL-AS5-CIDR-24 seq 5 permit 172.16.0.0/22 ge 24 le 24
+!
+ip prefix-list PL-AS5-CIDR-AGREGADA seq 5 permit 172.16.0.0/22
+!
+ip prefix-list PL-CONNECTED2BGP seq 5 permit 172.16.0.0/22 ge 24 le 24
+!
+!!
+route-map RM-CONNECTED2BGP permit 10
+ match ip address prefix-list PL-CONNECTED2BGP
+!
+route-map RM-AS5-R1-OUT permit 10
+ match ip address prefix-list PL-AS5-CIDR PL-AS5-CIDR-24
+ match as-path 4
+ !
+ !
+route-map RM-AS5-R1-OUT permit 20
+ match ip address prefix-list PL-AS4-CIDR-AGREGADA PL-AS5-CIDR-AGREGADA
+ match as-path 4
+ set as-path prepend 4
+!
+route-map RM-AS5-R1-OUT permit 30
+ match as-path 3
+
+ !
+ !
+route-map RM-AS3-R1-OUT permit 10
+ match ip address prefix-list PL-AS5-CIDR-24
+ match as-path 4
+!
+route-map RM-AS3-R1-OUT permit 20
+ match ip address prefix-list PL-AS5-CIDR-AGREGADA
+ match as-path 4
+!
+!         
+!
+control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!
+!
+end

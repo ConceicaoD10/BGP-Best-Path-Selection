@@ -1,0 +1,185 @@
+interface Loopback0
+ ip address 10.1.255.1 255.255.255.255
+!
+interface FastEthernet0/0
+ no ip address
+ shutdown
+ duplex full
+!
+interface Ethernet1/0
+ description AS2-R1
+ ip address 10.12.0.1 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/1
+ description AS2-R2
+ ip address 192.168.12.1 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/2
+ description AS1-R2
+ ip address 10.1.0.1 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/3
+ description AS1-R3
+ ip address 10.1.0.5 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/4
+ no ip address
+ shutdown
+ duplex full
+!
+interface Ethernet1/5
+ no ip address
+ shutdown
+ duplex full
+!
+interface Ethernet1/6
+ no ip address
+ shutdown 
+ duplex full
+!
+interface Ethernet1/7
+ no ip address
+ shutdown
+ duplex full
+!
+router ospf 1
+ router-id 1.1.1.1
+ passive-interface Loopback0
+ network 10.1.0.0 0.0.0.3 area 0
+ network 10.1.0.4 0.0.0.3 area 0
+ network 10.1.255.1 0.0.0.0 area 0
+ network 10.12.0.0 0.0.0.3 area 0
+ network 10.12.0.4 0.0.0.3 area 0
+ network 192.168.12.0 0.0.0.3 area 0
+!
+router bgp 1
+ template peer-policy TEMPLATE-POLICY-AS1
+  next-hop-self
+  send-community both
+ exit-peer-policy
+ !        
+ template peer-session TEMPLATE-SESSION-AS1
+  remote-as 1
+  update-source Loopback0
+ exit-peer-session
+ !
+ bgp log-neighbor-changes
+ neighbor 10.1.255.3 inherit peer-session TEMPLATE-SESSION-AS1
+ neighbor 10.1.255.3 description AS1-R3
+ neighbor 10.1.255.3 next-hop-self
+ neighbor 10.1.255.3 inherit peer-policy TEMPLATE-POLICY-AS1
+ neighbor 10.12.0.2 remote-as 2
+ neighbor 10.12.0.2 description AS2-R1
+ neighbor 10.12.0.2 send-community both
+ neighbor 10.12.0.2 route-map RM-AS2-R1-IN in
+ neighbor 10.12.0.2 route-map RM-AS2-R1-OUT out
+ neighbor 192.168.12.2 remote-as 2
+ neighbor 192.168.12.2 description AS2-R2
+ neighbor 192.168.12.2 send-community both
+ neighbor 192.168.12.2 route-map RM-AS2-R2-IN in
+ neighbor 192.168.12.2 route-map RM-AS2-R2-OUT out
+ maximum-paths 16
+!
+ip forward-protocol nd
+!
+ip as-path access-list 1 permit ^$
+!
+no ip http server
+no ip http secure-server
+!
+ bgp log-neighbor-changes
+ neighbor 10.1.255.3 inherit peer-session TEMPLATE-SESSION-AS1
+ neighbor 10.1.255.3 description AS1-R3
+ neighbor 10.1.255.3 next-hop-self
+ neighbor 10.1.255.3 inherit peer-policy TEMPLATE-POLICY-AS1
+ neighbor 10.12.0.2 remote-as 2
+ neighbor 10.12.0.2 description AS2-R1
+ neighbor 10.12.0.2 send-community both
+ neighbor 10.12.0.2 route-map RM-AS2-R1-IN in
+ neighbor 10.12.0.2 route-map RM-AS2-R1-OUT out
+ neighbor 192.168.12.2 remote-as 2
+ neighbor 192.168.12.2 description AS2-R2
+ neighbor 192.168.12.2 send-community both
+ neighbor 192.168.12.2 route-map RM-AS2-R2-IN in
+ neighbor 192.168.12.2 route-map RM-AS2-R2-OUT out
+ maximum-paths 16
+!
+ip forward-protocol nd
+!
+ip as-path access-list 1 permit ^$
+!
+no ip http server
+no ip http secure-server
+!
+!
+route-map RM-AS5-R1-OUT permit 10
+ match ip address prefix-list PL-AS1-CIDR
+ match as-path 1
+!
+route-map RM-AS2-R2-OUT permit 10
+ match ip address prefix-list PL-AS1-10-1-2-0 PL-AS1-10-1-1-0
+ match as-path 1
+!
+route-map RM-AS2-R2-OUT permit 20
+ match ip address prefix-list PL-AS1-10-1-2-0
+ match as-path 1
+ set as-path prepend 1 1 1
+!
+route-map RM-AS2-R2-OUT permit 30
+ match ip address prefix-list PL-AS1-CIDR-AGREGADA
+ match as-path 1
+!
+route-map RM-AS2-R1-OUT permit 10
+ match ip address prefix-list PL-AS1-CIDR PL-AS1-10-1-1-0
+ match as-path 1
+ set metric 50
+!
+route-map RM-AS2-R1-OUT permit 20
+ match ip address prefix-list PL-AS1-10-2-1-2-0 PL-AS1-10-1-2-0
+ match as-path 1
+ set metric 1000
+ set as-path prepend 1 1 1
+!
+route-map RM-AS2-R1-OUT permit 30
+ match ip address prefix-list PL-AS1-CIDR-AGREGADA
+ match as-path 1
+!
+route-map RM-AS2-R2-IN permit 10
+ match ip address prefix-list PL-AS4-VIA-A2-R2
+ set local-preference 5000
+!
+route-map RM-AS2-R2-IN permit 20
+!
+route-map RM-AS2-R1-IN permit 10
+ match ip address prefix-list PL-AS2-IN PL-AS4-VIA-A2-R1
+ set local-preference 5000
+ set weight 5000
+!
+route-map RM-AS2-R1-IN permit 20
+!
+!
+!
+!
+control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!
+!
+end
+
+
+

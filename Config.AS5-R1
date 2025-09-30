@@ -1,0 +1,68 @@
+hostname AS5-R1
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+!interface Loopback0
+ ip address 10.5.255.1 255.255.255.252
+!
+! interface Ethernet1/0
+ description AS1-R2
+ ip address 10.15.0.2 255.255.255.252
+ duplex full
+ !interface Ethernet1/1
+ description AS4-R1
+ ip address 10.45.0.2 255.255.255.252
+ duplex full
+ !!
+router bgp 5
+ bgp log-neighbor-changes
+ neighbor 10.15.0.1 remote-as 1
+ neighbor 10.15.0.1 description AS1-R2
+ neighbor 10.15.0.1 send-community both
+ neighbor 10.45.0.1 remote-as 4
+ neighbor 10.45.0.1 description AS4-R1
+ neighbor 10.45.0.1 send-community both
+ neighbor 10.45.0.1 route-map RM-AS4-R1-OUT out
+ !
+ !!
+ip prefix-list PL-AS1 seq 5 permit 10.1.1.0/24
+ip prefix-list PL-AS1 seq 10 permit 10.1.2.0/24
+!         
+ip prefix-list PL-AS1-10-1-0-0 seq 5 permit 10.1.0.0/16
+!
+route-map RM-AS1-TO-AS4 permit 10
+ match ip address prefix-list PL-FROM-AS1
+!
+route-map RM-AS4-R1-OUT permit 10
+ match ip address prefix-list PL-AS1-10-1-0-0
+ set metric 100
+!
+route-map RM-AS4-R1-OUT permit 20
+!
+! 
+ control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!         
+!
+end

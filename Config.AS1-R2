@@ -1,0 +1,175 @@
+hostname AS1-R2
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+!
+multilink bundle-name authenticated
+!
+!
+!
+!interface Loopback0
+ ip address 10.1.255.2 255.255.255.255
+!
+!
+interface FastEthernet0/0
+ no ip address
+ shutdown
+ duplex full
+!
+interface Ethernet1/0
+ description AS1-R1
+ ip address 10.1.0.2 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+!
+interface FastEthernet0/0
+ no ip address
+ shutdown
+ duplex full
+!
+interface Ethernet1/0
+ description AS1-R1
+ ip address 10.1.0.2 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+!router ospf 1
+ router-id 2.2.2.2
+ passive-interface Loopback0
+ network 10.1.0.0 0.0.0.3 area 0
+ network 10.1.0.12 0.0.0.3 area 0
+ network 10.1.255.2 0.0.0.0 area 0
+ network 10.15.0.0 0.0.0.3 area 0
+ network 192.168.12.0 0.0.0.3 area 0
+
+!
+!router bgp 1
+ template peer-policy TEMPLATE-POLICY-AS1
+  next-hop-self
+  send-community both
+ exit-peer-policy
+ !
+ template peer-session TEMPLATE-SESSION-AS1
+  remote-as 1
+  update-source Loopback0
+ exit-peer-session
+ !
+ !  bgp log-neighbor-changes
+ aggregate-address 10.1.0.0 255.255.0.0 as-set attribute-map REMOVE-WEIGHT
+ neighbor 10.1.255.3 inherit peer-session TEMPLATE-SESSION-AS1
+ neighbor 10.1.255.3 description AS1-R3
+ neighbor 10.1.255.3 next-hop-self
+ neighbor 10.1.255.3 route-map RM-AS2-R1-IN in
+ neighbor 10.1.255.3 inherit peer-policy TEMPLATE-POLICY-AS1
+ neighbor 10.15.0.2 remote-as 5
+ neighbor 10.15.0.2 description AS5-R1
+ neighbor 10.15.0.2 send-community both
+ neighbor 10.15.0.2 route-map RM-AS2-R2-IN in
+ neighbor 10.15.0.2 route-map RM-AS5-R1-OUT out
+ neighbor 10.15.0.2 inherit peer-policy TEMPLATE-POLICY-AS1
+! 
+!ip forward-protocol nd
+!
+ip as-path access-list 1 permit ^$
+!
+no ip http server
+no ip http secure-server
+!
+!
+ip prefix-list PL-AS1-10-1-1-0 seq 5 permit 10.1.1.0/24
+!
+ip prefix-list PL-AS1-10-1-2-0 seq 5 permit 10.1.2.0/24
+!
+ip prefix-list PL-AS1-CIDR seq 5 permit 10.1.0.0/16 le 24
+!
+ip prefix-list PL-AS1-CIDR-AGREGADA seq 5 permit 10.1.0.0/16
+!
+ip prefix-list PL-AS4-VIA-A2-R1 seq 10 permit 172.16.0.0/24
+!
+ip prefix-list PL-AS4-VIA-A2-R2 seq 10 permit 172.16.2.0/23 le 24
+!
+route-map REMOVE-WEIGHT permit 10
+ set weight 0
+!  !
+route-map RM-AS5-R1-OUT permit 10
+ match ip address prefix-list PL-AS1-CIDR PL-AS1-10-1-1-0
+ match as-path 1
+ set as-path prepend 1 1 1
+!
+route-map RM-AS5-R1-OUT permit 20
+ match ip address prefix-list PL-AS1-10-1-2-0
+ match as-path 1
+!  route-map RM-AS5-R1-OUT permit 30
+ match ip address prefix-list PL-AS1-CIDR-AGREGADA
+ match as-path 1
+ set as-path prepend 1
+!
+route-map RM-AS2-R2-OUT permit 10
+ match ip address prefix-list PL-AS1-10-1-1-0
+ match as-path 1
+ set metric 100
+!route-map RM-AS2-R2-OUT permit 20
+ match ip address prefix-list PL-AS1-10-1-2-0
+ match as-path 1
+ set metric 50
+ set as-path prepend 1 1 1
+!
+route-map RM-AS1-R2-OUT permit 30
+ match ip address prefix-list PL-AS1-CIDR-AGREGADA
+ match as-path 1
+! route-map RM-AS2-R2-IN permit 10
+ match ip address prefix-list PL-AS4-VIA-A2-R2
+ set local-preference 500
+!
+route-map RM-AS2-R2-IN permit 20
+!
+route-map RM-AS2-R1-IN permit 10
+ match ip address prefix-list PL-AS4-VIA-A2-R1
+ set local-preference 500
+ set weight 500
+!
+route-map RM-AS2-R1-IN permit 20
+!
+!
+!
+control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!
+!
+end
+        
+
+
+
+
+
+
+
+
+
+
+     
+
+

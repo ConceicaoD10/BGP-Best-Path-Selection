@@ -1,0 +1,107 @@
+!
+hostname AS2-R1
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+!
+multilink bundle-name authenticated
+!
+!interface Loopback0
+ ip address 10.1.255.4 255.255.255.255
+!
+interface Ethernet1/0
+ description AS2-R3
+ ip address 10.2.0.5 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/1
+ description AS2-R2
+ ip address 10.2.0.1 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+!
+interface Ethernet1/2
+ description AS1-R1
+ ip address 10.12.0.2 255.255.255.252
+ ip ospf network point-to-point
+ duplex full
+ !
+ !router ospf 2
+!
+router ospf 1
+ router-id 1.1.1.2
+ passive-interface Loopback0
+ network 10.1.255.4 0.0.0.0 area 0
+ network 10.2.0.0 0.0.0.3 area 0
+ network 10.2.0.4 0.0.0.3 area 0
+ network 10.12.0.0 0.0.0.3 area 0
+ network 10.12.0.4 0.0.0.3 area 0
+!router bgp 2
+ template peer-policy TEMPLATE-POLICY-AS1
+  next-hop-self
+  send-community both
+ exit-peer-policy
+ !        
+ template peer-policy TEMPLATE-POLICY-AS2
+  next-hop-self
+  send-community both
+ exit-peer-policy
+ !
+ template peer-session TEMPLATE-SESSION-AS2
+  remote-as 2
+  update-source Loopback0
+ exit-peer-session
+ !
+ ! !
+ bgp router-id 172.31.2.1
+ bgp log-neighbor-changes
+ neighbor 10.2.253.2 inherit peer-session TEMPLATE-SESSION-AS2
+ neighbor 10.2.253.2 description AS2-R3
+ neighbor 10.2.253.2 inherit peer-policy TEMPLATE-POLICY-AS2
+ neighbor 10.2.255.2 remote-as 2
+ neighbor 10.2.255.2 inherit peer-session TEMPLATE-SESSION-AS2
+ neighbor 10.2.255.2 description AS2-R2
+ neighbor 10.2.255.2 inherit peer-policy TEMPLATE-POLICY-AS1
+ neighbor 10.12.0.1 remote-as 1
+ neighbor 10.12.0.1 description AS1-R1
+ neighbor 10.12.0.1 send-community both
+ !
+ !         
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+!
+!
+!
+control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!
+!
+end
+
+

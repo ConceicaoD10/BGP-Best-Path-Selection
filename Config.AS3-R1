@@ -1,0 +1,72 @@
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+!
+multilink bundle-name authenticated
+!
+!
+!interface Loopback0
+ ip address 10.3.255.1 255.255.255.255
+!
+!interface Ethernet1/0
+ description AS4-R1
+ ip address 10.34.0.1 255.255.255.252
+ duplex full
+!
+interface Ethernet1/1
+ description AS2-R3
+ ip address 10.23.0.2 255.255.255.252
+ duplex full
+ !
+ !!
+router bgp 3
+ bgp log-neighbor-changes
+ network 10.3.0.0 mask 255.255.0.0
+ neighbor 10.23.0.1 remote-as 2
+ neighbor 10.23.0.1 description AS2-R3
+ neighbor 10.23.0.1 send-community both
+ neighbor 10.23.0.1 route-map RM-AS2-R3-OUT out
+ neighbor 10.34.0.2 remote-as 4
+ neighbor 10.34.0.2 description AS4-R1
+ neighbor 10.34.0.2 route-map RM-AS4-R1-OUT out
+!
+!ip forward-protocol nd
+!
+ip as-path access-list 3 permit ^$
+!
+no ip http server
+no ip http secure-server
+ip route 10.3.0.0 255.255.0.0 Null0 name AS3-CIDR
+!
+!ip prefix-list PL-AS1-10-1-0-0 seq 5 permit 10.1.0.0/16
+!
+route-map RM-AS4-R1-OUT permit 10
+ match ip address prefix-list PL-AS1-10-1-0-0 PL-AS1-10.1-0-0
+ set metric 50
+ !
+ !route-map RM-AS4-R1-OUT permit 20
+ match as-path 3
+!
+route-map RM-AS4-R1-OUT permit 30
+!
+route-map RM-AS2-R3-OUT permit 10
+ match as-path 3
+ set as-path prepend 3
+!
+route-map RM-AS2-R3-OUT permit 20
+!
+!
+!
+control-plane
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login
+!
+!
+end
